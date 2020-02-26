@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang = "en">
+    <head>
+        <meta charset="utf-8">
+        <title>
+            Rebrickable Lego Sets by Year 
+        </title>
+
+        <style>
+            .bar { fill: #34ebdb; }
+        </style>
+        <script  type = "text/javascript" src = "lib/d3/d3.min.js"></script>
+        <script  type = "text/javascript" src = "lib/d3-dsv/d3-dsv.min.js"></script>
+    </head>
+
+    <body>
+        <script>
+            /* set margin */
+            var margin = {top: 100, right: 100, bottom: 100, left: 100};
+            var width = 1200 - margin.left - margin.right;
+            var height = 700 - margin.top - margin.bottom;
+            /* set scale */
+            var x = d3.scaleTime().range([0, width]);
+            var y = d3.scaleLinear().range([height, 0]); /* e. */
+            /* set svg graphics */
+            var svg = d3.select("body").append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+            /* d3.dsv("separator", "file.csv") comma separator value(csv) so I set "," */
+            /* a. */
+            d3.dsv(",","q3.csv").then(function(data) {
+                /* b. */
+                years = data.map(function(data){
+                    return parseInt(data.year)
+                    });
+                running_total = data.map(function(data){
+                    return parseInt(data.running_total)
+                    });
+            /* new Date(year, month, day) set 0,1 to be January 1st */
+            x.domain([new Date(d3.min(years),0,1), new Date(d3.max(years),0,1)]);
+            y.domain([0, d3.max(data, function(data) {
+                return parseInt(data.running_total);
+                })]);
+            /* call svg and set attribute */
+            svg.selectAll(".bar")
+            .data(data)
+            .enter().append("rect")
+            .attr("class", "bar")
+            /* c. */
+            .attr("x", function(data){
+                return x(new Date(data.year)) - 5; })
+            .attr("width", 10)
+            /* d. */
+            .attr("y", function(data) {
+                return y(parseInt(data.running_total)); 
+                })
+            .attr("height", function(data) { 
+                return height - y(parseInt(data.running_total)); 
+                });
+            /* f. */
+            /* one label for every 3 years */
+            let xAxis = d3.axisBottom(x).ticks(d3.timeYear.every(3));
+
+            svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(xAxis);
+            svg.append("g")
+            .call(d3.axisLeft(y));
+            /* title tag */
+            svg.append("text")
+            .attr("x", (width / 2))             
+            .attr("y", -(margin.top / 2))
+            .attr("text-anchor", "middle")  
+            .style("font-size", "20px") 
+            .text("Rebrickable Lego Sets by Year"); /* g. */
+            /* GTID username */
+            svg.append("text")
+            .attr("x", width - 40)             
+            .attr("y", height + 40)
+            .attr("text-anchor", "middle")  
+            .style("font-size", "12px") 
+            .text("scheng98"); /* h. */
+});
+        </script>
+    </body>
+</html>

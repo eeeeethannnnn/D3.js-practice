@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script type = "text/javascript" src="../lib/d3.v5.min.js"></script>
+<script type = "text/javascript" src="../lib/d3-dsv.min.js"></script>
+<script type = "text/javascript" src="../lib/d3-fetch.min.js"></script>
+<script type = "text/javascript" src="../lib/d3-scale-chromatic.v1.min.js"></script>
+<script type = "text/javascript" src="../lib/d3-simple-slider.min.js"></script>
+<script type = "text/javascript" src="../lib/d3-tip.min.js"></script>
+<script type = "text/javascript" src="../lib/topojson.v2.min.js"></script>
+<style>
+
+  div.tooltip { 
+    position: absolute;     
+    text-align: left;     
+    width: 150px;          
+    height: 60px;         
+    padding: 2px;       
+    font: 14px sans-serif;    
+    background: grey;    
+    color: white;   
+    pointer-events: none;     
+}
+</style>
+<body>
+<script>
+    var margin = {top: 0, right: 50, bottom: 50, left: 50}
+        , width = window.innerWidth - margin.left - margin.right 
+        , height = window.innerHeight - margin.top - margin.bottom;
+
+    color_map = {
+      0:[],
+      1:[],
+      2:[],
+      3:[],
+      4:[],
+      5:[],
+      6:[],
+      7:[],
+      8:[]
+    }
+
+    var svg = d3.select("body").append("svg").attr("id", "map")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .append("g")
+                .attr("transform", "translate(0,0)");
+
+    var g = svg.append("g").attr("class", "key").attr("transform", "translate(-60,60)");
+    var div = d3.select("body").append("div")  .attr("class", "tooltip").style("opacity", 0);
+    var earthquake = d3.map();
+    //console.log(earthquake)
+    var stateRegion = d3.map();
+    //console.log(stateRegion)
+    var max = 0;
+    var csv = [d3.json("states-10m.json"),d3.dsv(",", "state-earthquakes.csv", function(d) {
+        if (+d[2010] > max){
+            max = +d[2010]
+            }
+        earthquake.set(d.States, +d[2010])
+        stateRegion.set(d.States, d.stateRegion)
+    })
+  ]
+  Promise.all(csv).then(mapping)
+
+  function mapping([us]) {
+    var states = topojson.feature(us, us.objects.states);
+    var geoMap = d3.geoAlbersUsa()
+              .fitSize([width, height], states)
+              .scale(1000)
+              .translate([width / 2-200, height / 2]);
+    var path = d3.geoPath().projection(geoMap);
+    var color = d3.scaleThreshold().domain(d3.range(2, max)).range(d3.schemeGreens[9]);
+    var x = d3.scaleLinear().domain([0, 8]).range([-50, 160])
+      
+    g.selectAll("rect")
+        .data(color.range().map(function(d) {
+            d = color.invertExtent(d);
+            if (d[0] == null) d[0] = x.domain()[0];
+            if (d[1] == null) d[1] = x.domain()[1];
+            return d;
+            }))
+        .enter()
+        .append("rect")
+        .attr("height", 20)
+        .attr("width", 20)
+        .attr("x", width-300)
+        .attr("y", function(d) {  return x(d[1])*1.06; })
+        .attr("fill", function(d) { return color(d[1]); })
+
+    g.append("text")
+        .attr("class", "caption")
+        .attr("x", width-350)
+        .attr("y", -20)
+        .attr("text-anchor", "start")
+        .attr("font-weight", "bold")
+        .style("font-size", "20px") 
+        .text("Earthquake Frequency");
+
+    svg.append("g")
+        .attr("class", "states")
+        .selectAll("path")
+        .data(states.features)
+        .enter().append("path")
+        .attr("d", path)
+        .attr('fill', function(d){ 
+          if (isNaN(Math.log(earthquake.get(d.properties.name))) || earthquake.get(d.properties.name)==0){
+            color_map[0].push(earthquake.get(d.properties.name))
+            return color(2)
+          }  
+          else{
+            color_map[Math.round(Math.log(earthquake.get(d.properties.name)))].push(earthquake.get(d.properties.name))
+
+            return color(Math.round(2+Math.log(earthquake.get(d.properties.name))))
+          }
+        })
+        .attr('stroke', '#fff').on("mouseover", mouseON);
+    
+    for (n = 0; n < 9; n++) {
+        if (isNaN(d3.max(color_map[n]))){
+            t = Math.round(Math.exp(n))
+        } else{
+            t = d3.max(color_map[n])
+        }
+    svg.append("text")
+        .attr("x", width - 330)
+        .attr("y", n * 28+80)
+        .attr("text-anchor", "left")  
+        .style("font-size", "16px") 
+        .text(t)
+        .attr("fill", "black")
+      } 
+    
+    }
+    function mouseON(data, i) {  
+        div.transition().duration(0).style("opacity", 12);   
+
+        div .html(' State: '+data.properties.name+'<br/> Region: '+stateRegion.get(data.properties.name) + 
+            '<br/> Year: 2010'+"<br/> Earthquakes: "+earthquake.get(data.properties.name))  
+            .style("left", (d3.event.pageX) + "px")   
+            .style("top", (d3.event.pageY - 28) + "px");
+    }
+
+    svg.append("text")
+        .attr("x", width * 0.7)
+        .attr("y", height * 0.9)
+        .attr("text-anchor", "middle")  
+        .style("font-size", "14px") 
+        .text("scheng98")
+        .attr("fill", "black")
+
+
+
+</script>
+</body>
+</html>

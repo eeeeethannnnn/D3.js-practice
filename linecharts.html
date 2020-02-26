@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Earthquake Statistics for 2000-2015</title>
+    <style type="text/css">
+    .line{
+      fill:none;
+      stroke:#ffan00;
+      stroke-width:3
+    }
+    .dot{
+      fill:none;
+      stroke: black;
+    }
+    .rect{
+      fill:none
+    }
+    </style>
+    <script type = "text/javascript" src="../lib/d3.v5.min.js"></script>
+    <script type = "text/javascript" src="../lib/d3-dsv.min.js"></script>
+    <script type = "text/javascript" src="../lib/d3-fetch.min.js"></script>
+    <script type = "text/javascript" src="../lib/d3-scale-chromatic.v1.min.js"></script>
+    <script type = "text/javascript" src="../lib/d3-simple-slider.min.js"></script>
+    <script type = "text/javascript" src="../lib/d3-tip.min.js"></script>
+    <script type = "text/javascript" src="../lib/topojson.v2.min.js"></script>
+  </head>
+  <body>
+
+    <div style="page-break-after: always;">
+      <svg id="g1" width="900", height="600"></svg>
+
+    </div>
+    <div style="page-break-after: always;">
+      <svg id="g2" width="900", height="600"></svg>
+
+    </div>
+    <div style="page-break-after: always;">
+      <svg id="g3" width="900", height="600"></svg>
+
+    </div>
+    <div style="page-break-after: always;">
+      <svg id="g4" width="900", height="600"></svg>
+
+    </div>
+
+    <script type="text/javascript">
+      var xS,yS,xAxis,ySS,ySL;
+      var dl=[]
+      var formatTime = d3.timeFormat("%Y");
+      var parseTime = d3.timeParse("%Y");
+      var colors = ['#900C3F','#C70039','#FF5733','#FFC300']
+      var symbols = [d3.symbolSquare,d3.symbolDiamond,d3.symbolTriangle,d3.symbolCircle]
+//fig.1
+      d3.dsv(',','earthquakes.csv').then(function(data){
+        var svg = d3.select("#g1"),
+            margin={top: 50, right:50, bottom: 50, left:50},
+            width=svg.attr("width") - margin.left - margin.right*2,
+            height=svg.attr("height") - margin.top -margin.bottom;
+
+        var g=svg.append("g")
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+        dataSet=data;
+        var year = dataSet.map(function(d){
+            return(parseTime(d.year));})
+        //console.log(year)
+        var first = dataSet.map(function(d){
+            return(parseInt(d['8.0+']));})
+        //console.log(first)
+        var second = dataSet.map(function(d){
+            return(parseInt(d["7_7.9"]));})
+        //console.log(second)
+        var third = dataSet.map(function(d){
+            return(parseInt(d["6_6.9"]));})
+        //console.log(third)
+        var forth = dataSet.map(function(d){
+            return(parseInt(d["5_5.9"]));})
+        //console.log(forth)
+        var fifth = dataSet.map(function(d){
+            return(parseInt(d["Estimated Deaths"]));})
+        //console.log(fifth)
+
+
+        var startYear=d3.min(year)
+        var endYear=d3.max(year)
+        xS = d3.scaleTime().domain([startYear,endYear]).range([0, width]);
+        ySvalue=Math.max(d3.max(first),d3.max(second),d3.max(third),d3.max(forth));
+        yS = d3.scaleLinear().domain([0, ySvalue]).range([height,0]);
+
+        g.append("g")
+            .attr("transform", "translate(0," + height+ ")")
+            .call(d3.axisBottom(xS).ticks(d3.timeYear).tickFormat(formatTime))
+            .attr("font-size", "18px");
+        g.append('text')
+          .attr("transform", "translate(" + (width/2) + "," + (height + 35) + ")")
+          .style("text-anchor", "middle")
+          .text("Year")
+          .attr("font-size", "18px");
+
+        var size = 15
+
+        g.append("rect")
+        .attr('x',width)
+        .attr('y',0)
+        .attr('width',size*2)
+        .attr('height',size)
+        .attr('fill',colors[3])
+
+        g.append("rect")
+        .attr('x',width)
+        .attr('y',30)
+        .attr('width',size*2)
+        .attr('height',size)
+        .attr('fill',colors[2])
+
+        g.append("rect")
+        .attr('x',width)
+        .attr('y',60)
+        .attr('width',size*2)
+        .attr('height',size)
+        .attr('fill',colors[1])
+
+        g.append("rect")
+        .attr('x',width)
+        .attr('y',90)
+        .attr('width',size*2)
+        .attr('height',size)
+        .attr('fill',colors[0])
+
+        g.append("text")
+        .attr('x',width + 70)
+        .attr('y',12)
+        .attr("text-anchor","end")
+        .style("front-size","15px")
+        .text('5_5.9')
+
+        g.append("text")
+        .attr('x',width+70)
+        .attr('y',12+30)
+        .attr("text-anchor","end")
+        .style("front-size","15px").text('6_6.9')
+
+        g.append("text")
+        .attr('x',width+70)
+        .attr('y',12+60)
+        .attr("text-anchor","end")
+        .style("front-size","15px")
+        .text('7_7.9')
+
+        g.append("text")
+        .attr('x',width+70)
+        .attr('y',12+90)
+        .attr("text-anchor","end")
+        .style("front-size","15px").text('8.0+')        
+
+
+        g.append("g")
+          .call(d3.axisLeft(yS));
+        g.append("text")
+          .attr("transform", "rotate(270)")
+          .attr("y", 0 - margin.left )
+          .attr("x",0 - (height / 2))
+          .attr("dy", "1em")
+          .style("text-anchor", "middle")
+          .text("Num of Earthquakes");
+
+      var line1=d3.line()
+                  .x(function(d){
+                      return xS(parseTime(d.year));})
+                  .y(function(d){
+                      return yS(parseInt(d["8.0+"]));})
+                  .curve(d3.curveMonotoneX);
+      var line2=d3.line()
+                  .x(function(d){
+                      return xS(parseTime(d.year));})
+                  .y(function(d){
+                      return yS(parseInt(d["7_7.9"]));})
+                  .curve(d3.curveMonotoneX);
+      var line3=d3.line()
+                  .x(function(d){
+                      return xS(parseTime(d.year));})
+                  .y(function(d){
+                      return yS(parseInt(d["6_6.9"]));})
+                  .curve(d3.curveMonotoneX);
+      var line4=d3.line()
+                  .x(function(d){
+                      return xS(parseTime(d.year));})
+                  .y(function(d){
+                      return yS(parseInt(d['5_5.9']));})
+                  .curve(d3.curveMonotoneX);
+
+      g.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .style("stroke", colors[0])
+        .attr("d", line1)
+
+      g.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .style("stroke", colors[1])
+        .attr("d", line2)
+
+      g.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .style("stroke", colors[2])
+        .attr("d", line3)
+
+      g.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .style("stroke", colors[3])
+        .attr("d", line4)
+
+    g.append('text')
+        .attr("x",(width)/2)
+        .attr("y",height-height-20)
+        .attr("text-anchor","middle")
+        .style("front-size","15px")
+        .text('Earthquake Statistics for 2000-2015')
+
+
+})
+//fig.2
+    d3.dsv(',','earthquakes.csv').then(function(data){
+
+      dataSet=data;
+      var year=dataSet.map(function(d){
+          return(parseTime(d.year));})
+      var first=dataSet.map(function(d){
+          return(parseInt(d['8.0+']));})
+      var second=dataSet.map(function(d){
+          return(parseInt(d["7_7.9"]));})
+      var third=dataSet.map(function(d){
+          return(parseInt(d["6_6.9"]));})
+      var forth=dataSet.map(function(d){
+          return(parseInt(d["5_5.9"]));})
+      var fifth=dataSet.map(function(d){
+          return(parseInt(d["Estimated Deaths"]));})
+
+      ////dimensions of graph
+      var svg = d3.select("#g2"),
+          margin={top: 50, right:50, bottom: 50, left:50},
+          width=svg.attr("width")-margin.left - margin.right*2,
+          height=svg.attr("height")-margin.top -margin.bottom;
+
+      var g=svg.append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+      var startYear=d3.min(year)
+      var endYear=d3.max(year)
+      xS = d3.scaleTime().domain([startYear,endYear]).range([0, width]);
+      ySvalue=Math.max(d3.max(first),d3.max(second),d3.max(third),d3.max(forth));
+      yS = d3.scaleLinear().domain([0, ySvalue]).range([height,0]);
+
+      g.append("g")
+          .attr("transform", "translate(0," + height+ ")")
+          .call(d3.axisBottom(xS)
+          .ticks(d3.timeYear)
+          .tickFormat(formatTime))
+          .attr("font-size", "18px");
+      g.append('text')
+        .attr("transform","translate(" + (width/2) + "," +(height + 35) + ")")
+        .style("text-anchor", "middle")
+        .text("Year")
+        .attr("font-size", "18px");
+      g.append("g")
+        .call(d3.axisLeft(yS));
+      g.append("text")
+        .attr("transform", "rotate(270)")
+        .attr("y", 0 - margin.left)
+        .attr("x",0 - (height / 2))
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .text("Num of Earthquakes");
+
+        var size = 15
+
+        g.append("rect")
+        .attr('x',width)
+        .attr('y',0)
+        .attr('width',size*2)
+        .attr('height',size)
+        .attr('fill',colors[3])
+
+        g.append("rect")
+        .attr('x',width)
+        .attr('y',30)
+        .attr('width',size*2)
+        .attr('height',size)
+        .attr('fill',colors[2])
+
+        g.append("rect")
+        .attr('x',width)
+        .attr('y',60)
+        .attr('width',size*2)
+        .attr('height',size)
+        .attr('fill',colors[1])
+
+        g.append("rect")
+        .attr('x',width)
+        .attr('y',90)
+        .attr('width',size*2)
+        .attr('height',size)
+        .attr('fill',colors[0])
+
+        g.append("text")
+        .attr('x',width + 70)
+        .attr('y',12)
+        .attr("text-anchor","end")
+        .style("front-size","15px")
+        .text('5_5.9')
+
+        g.append("text")
+        .attr('x',width+70)
+        .attr('y',12+30)
+        .attr("text-anchor","end")
+        .style("front-size","15px").text('6_6.9')
+
+        g.append("text")
+        .attr('x',width+70)
+        .attr('y',12+60)
+        .attr("text-anchor","end")
+        .style("front-size","15px")
+        .text('7_7.9')
+
+        g.append("text")
+        .attr('x',width+70)
+        .attr('y',12+90)
+        .attr("text-anchor","end")
+        .style("front-size","15px").text('8.0+') 
+
+    var line1=d3.line()
+                .x(function(d){return xS(parseTime(d.year));})
+                .y(function(d){return yS(parseInt(d["8.0+"]));})
+                .curve(d3.curveMonotoneX);
+    var line2=d3.line()
+                .x(function(d){return xS(parseTime(d.year));})
+                .y(function(d){return yS(parseInt(d["7_7.9"]));})
+                .curve(d3.curveMonotoneX);
+    var line3=d3.line()
+                .x(function(d){return xS(parseTime(d.year));})
+                .y(function(d){return yS(parseInt(d["6_6.9"]));})
+                .curve(d3.curveMonotoneX);
+    var line4=d3.line()
+                .x(function(d){return xS(parseTime(d.year));})
+                .y(function(d){return yS(parseInt(d['5_5.9']));})
+                .curve(d3.curveMonotoneX);
+
+    g.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .style("stroke", colors[0])
+        .attr("d", line1)
+    g.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .style("stroke", colors[1])
+        .attr("d", line2)
+    g.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .style("stroke", colors[2])
+        .attr("d", line3)
+    g.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .style("stroke", colors[3])
+        .attr("d", line4)
+
+    g.append('text')
+      .attr("x",(width)/2)
+      .attr("y",height-height-20)
+      .attr("text-anchor","middle")
+      .style("front-size","15px")
+      .text('Earthquake Statistics for 2000-2015 with Symbols')
+
+    var smallsize=d3.min(fifth)
+    var largesize=d3.max(fifth)
+    var sizeScale = d3.scaleLinear().domain([smallsize,largesize]).range([30, 120]);
+
+    g.selectAll('.dot')
+     .data(data)
+     .enter()
+     .append('path')
+     .attr('d',d3.symbol().type(symbols[0]).size(function(d){
+        return sizeScale(d['Estimated Deaths'])
+     }))
+     .attr("fill", colors[0])
+     .attr("transform",function(d){
+      return "translate(" + xS(parseTime(d.year)) + "," + yS(d["8.0+"])+")";
+    });
+
+    g.selectAll('.dot')
+      .data(data)
+      .enter()
+      .append('path')
+      .attr('d',d3.symbol().type(symbols[1]).size(function(d){
+        return sizeScale(d['Estimated Deaths'])
+      }))
+      
+      .attr("fill", colors[1])
+      .attr("transform",function(d){
+        return "translate(" + xS(parseTime(d.year)) + "," + yS(d["7_7.9"])+")";
+      });
+
+    g.selectAll('.dot')
+      .data(data)
+      .enter()
+     .append('path')
+     .attr('d',d3.symbol().type(symbols[2]).size(function(d){
+       return sizeScale(d['Estimated Deaths'])
+     }))
+     .attr("fill", colors[2])
+      .attr("transform",function(d){
+        return "translate(" + xS(parseTime(d.year)) + "," + yS(d["6_6.9"])+")";
+      });
+
+   g.selectAll('.dot')
+     .data(data)
+     .enter()
+    .append('path')
+    .attr('d',d3.symbol().type(symbols[3]).size(function(d){
+      return sizeScale(d['Estimated Deaths'])
+    }))
+    .attr("fill", colors[3])
+     .attr("transform",function(d){
+       return "translate(" + xS(parseTime(d.year)) + "," + yS(d["5_5.9"])+")";
+     });
+})
+//fig.3
+    d3.dsv(',','earthquakes.csv').then(function(data){
+
+      dataSet=data;
+      var year=dataSet.map(function(d){
+          return(parseTime(d.year));})
+      var first=dataSet.map(function(d){
+          return(parseInt(d['8.0+']));})
+      var second=dataSet.map(function(d){
+          return(parseInt(d["7_7.9"]));})
+      var third=dataSet.map(function(d){
+          return(parseInt(d["6_6.9"]));})
+      var forth=dataSet.map(function(d){
+          return(parseInt(d["5_5.9"]));})
+      var fifth=dataSet.map(function(d){
+          return(parseInt(d["Estimated Deaths"]));})
+
+      var svg = d3.select("#g3"),
+          margin={top: 50, right:50, bottom: 50, left:50},
+          width=svg.attr("width")-margin.left - margin.right*2,
+          height=svg.attr("height")-margin.top -margin.bottom;
+
+      var g=svg.append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+      var startYear=d3.min(year)
+      var endYear=d3.max(year)
+
+      xS = d3.scaleTime().domain([startYear,endYear]).range([0, width]);
+      ySvalue=Math.max(d3.max(first),d3.max(second),d3.max(third),d3.max(forth));
+      ySS = d3.scaleSqrt().domain([0, ySvalue]).range([height,0]);
+      g.append("g")
+          .attr("transform", "translate(0," + height+ ")")
+          .call(d3.axisBottom(xS)
+          .ticks(d3.timeYear)
+          .tickFormat(formatTime))
+          .attr("font-size", "18px");
+      g.append('text')
+        .attr("transform","translate(" + (width/2) + "," +(height + 35) + ")")
+        .style("text-anchor", "middle")
+        .text("Year")
+        .attr("font-size", "18px");
+      g.append("g")
+        .call(d3.axisLeft(ySS));
+      g.append("text")
+        .attr("transform", "rotate(270)")
+        .attr("y", 0 - margin.left)
+        .attr("x",0 - (height / 2))
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .text("Num of Earthquakes");
+
+    var line1=d3.line()
+                .x(function(d){return xS(parseTime(d.year));})
+                .y(function(d){return ySS(parseInt(d["8.0+"]));})
+                .curve(d3.curveMonotoneX);
+    var line2=d3.line()
+                .x(function(d){return xS(parseTime(d.year));})
+                .y(function(d){return ySS(parseInt(d["7_7.9"]));})
+                .curve(d3.curveMonotoneX);
+    var line3=d3.line()
+                .x(function(d){return xS(parseTime(d.year));})
+                .y(function(d){return ySS(parseInt(d["6_6.9"]));})
+                .curve(d3.curveMonotoneX);
+    var line4=d3.line()
+                .x(function(d){return xS(parseTime(d.year));})
+                .y(function(d){return ySS(parseInt(d['5_5.9']));})
+                .curve(d3.curveMonotoneX);
+
+    g.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .style("stroke", colors[0])
+        .attr("d", line1)
+    g.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .style("stroke", colors[1])
+        .attr("d", line2)
+    g.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .style("stroke", colors[2])
+        .attr("d", line3)
+    g.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .style("stroke", colors[3])
+        .attr("d", line4)
+
+    g.append('text')
+      .attr("x",(width)/2)
+      .attr("y",height-height-20)
+      .attr("text-anchor","middle")
+      .style("front-size","15px")
+      .text('Earthquake Statistics for 2000-2015 (Square root Scale)')
+
+    var smallsize=d3.min(fifth)
+    var largesize=d3.max(fifth)
+    var sizeScale = d3.scaleLinear().domain([smallsize,largesize]).range([30, 120]);
+
+    g.selectAll('.dot')
+    .data(data)
+    .enter()
+    .append('path')
+    .attr('d',d3.symbol()
+    .type(symbols[0])
+    .size(function(d){
+      return sizeScale(d['Estimated Deaths'])}))
+    .attr("fill", colors[0])
+    .attr("transform",function(d){
+      return "translate(" + xS(parseTime(d.year)) + "," + ySS(d["8.0+"])+")";});
+
+        var size = 15
+
+        g.append("rect")
+        .attr('x',width+10)
+        .attr('y',0)
+        .attr('width',size*2)
+        .attr('height',size)
+        .attr('fill',colors[3])
+
+        g.append("rect")
+        .attr('x',width+10)
+        .attr('y',30)
+        .attr('width',size*2)
+        .attr('height',size)
+        .attr('fill',colors[2])
+
+        g.append("rect")
+        .attr('x',width+10)
+        .attr('y',60)
+        .attr('width',size*2)
+        .attr('height',size)
+        .attr('fill',colors[1])
+
+        g.append("rect")
+        .attr('x',width+10)
+        .attr('y',90)
+        .attr('width',size*2)
+        .attr('height',size)
+        .attr('fill',colors[0])
+
+        g.append("text")
+        .attr('x',width+80)
+        .attr('y',12)
+        .attr("text-anchor","end")
+        .style("front-size","15px")
+        .text('5_5.9')
+
+        g.append("text")
+        .attr('x',width+80)
+        .attr('y',12+30)
+        .attr("text-anchor","end")
+        .style("front-size","15px").text('6_6.9')
+
+        g.append("text")
+        .attr('x',width+80)
+        .attr('y',12+60)
+        .attr("text-anchor","end")
+        .style("front-size","15px")
+        .text('7_7.9')
+
+        g.append("text")
+        .attr('x',width+80)
+        .attr('y',12+90)
+        .attr("text-anchor","end")
+        .style("front-size","15px").text('8.0+') 
+
+    //Diamond
+    g.selectAll('.dot')
+      .data(data)
+      .enter()
+      .append('path')
+      .attr('d',d3.symbol()
+      .type(symbols[1])
+      .size(function(d){
+        return sizeScale(d['Estimated Deaths'])
+      }))
+      .attr("fill", colors[1])
+      .attr("transform",function(d){
+        return "translate(" + xS(parseTime(d.year)) + "," + ySS(d["7_7.9"])+")";
+      });
+    //Triangle
+    g.selectAll('.dot')
+      .data(data)
+      .enter()
+     .append('path')
+     .attr('d',d3.symbol()
+     .type(symbols[2])
+     .size(function(d){
+       return sizeScale(d['Estimated Deaths'])
+     }))
+     .attr("fill", colors[2])
+     .attr("transform",function(d){
+        return "translate(" + xS(parseTime(d.year)) + "," + ySS(d["6_6.9"])+")";
+      });
+   //circle
+   g.selectAll('.dot')
+     .data(data)
+     .enter()
+     .append('path')
+     .attr('d',d3.symbol().type(symbols[3]).size(function(d){
+      return sizeScale(d['Estimated Deaths'])
+    }))
+    .attr("fill", colors[3])
+     .attr("transform",function(d){
+       return "translate(" + xS(parseTime(d.year)) + "," + ySS(d["5_5.9"])+")";
+     });
+
+})
+//fig.4
+    d3.dsv(',','earthquakes.csv').then(function(data){
+      dataSet=data;
+      var year=dataSet.map(function(d){
+          return(parseTime(d.year));})
+      var first=dataSet.map(function(d){
+          return(parseInt(d['8.0+']));})
+      var second=dataSet.map(function(d){return(parseInt(d["7_7.9"]));})
+      var third=dataSet.map(function(d){return(parseInt(d["6_6.9"]));})
+      var forth=dataSet.map(function(d){return(parseInt(d["5_5.9"]));})
+      var fifth=dataSet.map(function(d){return(parseInt(d["Estimated Deaths"]));})
+
+      var svg = d3.select("#g4"),
+          margin={top: 50, right:50, bottom: 50, left:50},
+          width=svg.attr("width")-margin.left - margin.right*2,
+          height=svg.attr("height")-margin.top -margin.bottom;
+
+      var g=svg.append("g")
+          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+      var startYear=d3.min(year)
+      var endYear=d3.max(year)
+      xS = d3.scaleTime().domain([startYear,endYear]).range([0, width]);
+      ySvalue=Math.max(d3.max(first),d3.max(second),d3.max(third),d3.max(forth));
+      ySL = d3.scaleLog().domain([0.89, ySvalue]).range([height,0]);
+      ySL.clamp(true)
+
+      g.append("g")
+          .attr("transform", "translate(0," + height+ ")")
+          .call(d3.axisBottom(xS).ticks(d3.timeYear).tickFormat(formatTime))
+          .attr("font-size", "18px");
+      g.append('text')
+        .attr("transform", "translate(" + (width/2) + "," + (height + 35) + ")")
+        .style("text-anchor", "middle")
+        .text("Year")
+        .attr("font-size", "18px");
+
+      g.append("g")
+        .call(d3.axisLeft(ySL));
+      g.append("text")
+        .attr("transform", "rotate(270)")
+        .attr("y", 0 - margin.left)
+        .attr("x",0 - (height / 2))
+        .attr("dy", "1em")
+        .style("text-anchor", "middle")
+        .text("Num of Earthquakes");
+
+        var size = 15
+
+        g.append("rect")
+        .attr('x',width+10)
+        .attr('y',0)
+        .attr('width',size*2)
+        .attr('height',size)
+        .attr('fill',colors[3])
+
+        g.append("rect")
+        .attr('x',width+10)
+        .attr('y',30)
+        .attr('width',size*2)
+        .attr('height',size)
+        .attr('fill',colors[2])
+
+        g.append("rect")
+        .attr('x',width+10)
+        .attr('y',60)
+        .attr('width',size*2)
+        .attr('height',size)
+        .attr('fill',colors[1])
+
+        g.append("rect")
+        .attr('x',width+10)
+        .attr('y',90)
+        .attr('width',size*2)
+        .attr('height',size)
+        .attr('fill',colors[0])
+
+        g.append("text")
+        .attr('x',width+80)
+        .attr('y',12)
+        .attr("text-anchor","end")
+        .style("front-size","15px")
+        .text('5_5.9')
+
+        g.append("text")
+        .attr('x',width+80)
+        .attr('y',12+30)
+        .attr("text-anchor","end")
+        .style("front-size","15px").text('6_6.9')
+
+        g.append("text")
+        .attr('x',width+80)
+        .attr('y',12+60)
+        .attr("text-anchor","end")
+        .style("front-size","15px")
+        .text('7_7.9')
+
+        g.append("text")
+        .attr('x',width+80)
+        .attr('y',12+90)
+        .attr("text-anchor","end")
+        .style("front-size","15px").text('8.0+') 
+
+    var line1=d3.line()
+                .x(function(d){return xS(parseTime(d.year));})
+                .y(function(d){return ySL(parseInt(d['8.0+']));})
+                .curve(d3.curveMonotoneX);
+    var line2=d3.line()
+                .x(function(d){return xS(parseTime(d.year));})
+                .y(function(d){return ySL(parseInt(d["7_7.9"]));})
+                .curve(d3.curveMonotoneX);
+    var line3=d3.line()
+                .x(function(d){return xS(parseTime(d.year));})
+                .y(function(d){return ySL(parseInt(d["6_6.9"]));})
+                .curve(d3.curveMonotoneX);
+    var line4=d3.line()
+                .x(function(d){return xS(parseTime(d.year));})
+                .y(function(d){return ySL(parseInt(d['5_5.9']));})
+                .curve(d3.curveMonotoneX);
+
+    g.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .style("stroke", colors[0])
+        .attr("d", line1)
+    g.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .style("stroke", colors[1])
+        .attr("d", line2)
+    g.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .style("stroke", colors[2])
+        .attr("d", line3)
+    g.append("path")
+        .datum(data)
+        .attr("class", "line")
+        .style("stroke", colors[3])
+        .attr("d", line4)
+
+    g.append('text')
+      .attr("x",(width)/2)
+      .attr("y",0-20)
+      .attr("text-anchor","middle")
+      .style("front-size","15px")
+      .text('Earthquake Statistics for 2000-2015(Log Scale)')
+
+    var smallsize=d3.min(fifth)
+    var largesize=d3.max(fifth)
+    var sizeScale = d3.scaleLinear().domain([smallsize,largesize]).range([30, 120]);
+
+    g.selectAll('.dot')
+    .data(data)
+    .enter()
+    .append('path')
+    .attr('d',d3.symbol().type(symbols[0]).size(function(d){
+      return sizeScale(d['Estimated Deaths'])
+    }))
+    .attr("fill", colors[0])
+    .attr("transform",function(d){
+      return "translate(" + xS(parseTime(d.year)) + "," + ySL(d["8.0+"])+")";
+    });
+
+    g.selectAll('.dot')
+      .data(data)
+      .enter()
+      .append('path')
+      .attr('d',d3.symbol().type(symbols[1]).size(function(d){
+        return sizeScale(d['Estimated Deaths'])
+      }))
+      .attr("fill", colors[1])
+      .attr("transform",function(d){
+        return "translate(" + xS(parseTime(d.year)) + "," + ySL(d["7_7.9"])+")";
+      });
+
+    g.selectAll('.dot')
+      .data(data)
+      .enter()
+     .append('path')
+     .attr('d',d3.symbol().type(symbols[2]).size(function(d){
+       return sizeScale(d['Estimated Deaths'])
+     }))
+     .attr("fill", colors[2])
+      .attr("transform",function(d){
+        return "translate(" + xS(parseTime(d.year)) + "," + ySL(d["6_6.9"])+")";
+      });
+
+   g.selectAll('.dot')
+     .data(data)
+     .enter()
+     .append('path')
+     .attr('d',d3.symbol().type(symbols[3]).size(function(d){
+       return sizeScale(d['Estimated Deaths'])
+    }))
+     .attr("fill", colors[3])
+     .attr("transform",function(d){
+       return "translate(" + xS(parseTime(d.year)) + "," + ySL(d["5_5.9"])+")";
+     });
+     svg.append("text")
+    .attr("x", width+60)
+    .attr("y", height+90)
+    .text("scheng98")
+    .attr("font-size", "12px")
+})
+
+    </script>
+  </body>
+</html>

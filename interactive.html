@@ -1,0 +1,280 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <script src="../lib/d3.v5.min.js"></script>
+    <script src="../lib/d3-dsv.min.js"></script>
+    <script src="../lib/d3-fetch.min.js"></script>
+    <script src="../lib/d3-scale-chromatic.v1.min.js"></script>
+    <script src="../lib/topojson.v2.min.js"></script>
+    <title>ZOOM OUT Your Browser to 50%</title>
+
+</head>
+<body>
+    <h1 id="title1">US Earthquakes by Region 2011-2015</h1>
+    <div id="line"></div>
+    <h1 id="title2">Western Region Earthquakes 2012</h1>
+    <div id="bar"></div>
+    <script type="text/javascript">
+    var input = [];
+    d3.csv("state-year-earthquakes.csv").then(function (d) {
+        input = d;
+        // console.log(input)
+        drawLine(input);
+    });
+    // color code set
+    var colors = ["#3498DB", "#FFAA1D", "#1E8449", "#CD6155"];
+
+
+
+    function drawLine(data) {
+        //margin
+        var margin = { top: 50, right: 50, bottom: 50, left: 50 },
+            width = 1200 - margin.left - margin.right,
+            height = 450 - margin.top - margin.bottom;
+      
+        //group file
+        var timeLine = [];
+        var group = [];
+        var location = [];
+        for (var i = 0; i < data.length; i++) {
+            if (timeLine.indexOf(data[i].year) == -1) {
+                timeLine.push(data[i].year);
+            }
+            if (group.indexOf(data[i].region) == -1) {
+                group.push(data[i].region);
+            }
+            if (location.indexOf(data[i].state) == -1) {
+                location.push(data[i].state);
+            }
+        }
+        //console.log(timeLine)
+//sort timeline
+        timeLine.sort((y1, y2) => { y1 - y2 });
+        //console.log(timeLine)
+        var all = [];
+        for (var i = 0; i < group.length; i++) {
+            var tmp = { name: group[i], values: [] };
+            for (var j = 0; j < timeLine.length; j++) {
+                tmp.values.push({ name: timeLine[j], value: 0 });
+            }
+            all.push(tmp);
+        }
+        //console.log(all)
+// data >> all >> change data type then sum up 
+        for (var i = 0; i < data.length; i++) {
+            for (var j = 0; j < all.length; j++) {
+                for (var k = 0; k < all[j].values.length; k++) {
+                    if (all[j].name == data[i].region && all[j].values[k].name == data[i].year) {
+                        all[j].values[k].value += Number(data[i].count);
+                    }
+                }
+            }
+        }
+        //console.log(all)
+        var max = 0
+        for (var i = 0; i < all.length; i++) {
+            for (var j = 0; j < all[i].values.length; j++) {
+                if (max < all[i].values[j].value) {
+                    max = all[i].values[j].value;
+                }
+            }
+        }
+        //console.log(max)
+        var svg = d3.select("#line")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+//scale
+        var xScale = d3.scalePoint().domain(timeLine).range([0, width]);
+        var yScale = d3.scaleLinear().domain([0, 1.2*max]).range([height, 0]);
+
+        var xAxis = svg.append("g").attr("transform", "translate(60," + height + ")").call(d3.axisBottom(xScale)).style("font-size","18px")
+        var yAxis = svg.append("g").attr("transform", "translate(60,0)").call(d3.axisLeft(yScale)).style("font-size","18px");
+//make line
+        all.forEach(function (data, i) {
+            line = d3.line()
+                .x(d => xScale(d.name))
+                .y(d => yScale(d.value))
+            svg.append("path")
+                .attr("transform", "translate(60,0)")
+                .datum(data.values)
+                .attr("d", line)
+                .style("stroke", function () { return colors[i] })
+                .style("fill", "none")
+                .attr("stroke-width", 3)
+        })
+        /*
+        var line1 = d3.line()
+                .x(d => xScale(d.name))
+                .y(d => yScale(d.value))
+        svg.append("path")
+                .attr("transform", "translate(60,0)")
+                .datum(data.values)
+                .attr("d", line)
+                .style("stroke", function () { return colors[0] })
+                .style("fill", "none")
+                .attr("stroke-width", 3)
+        var line2 = d3.line()
+                .x(d => xScale(d.name))
+                .y(d => yScale(d.value))
+        svg.append("path")
+                .attr("transform", "translate(60,0)")
+                .datum(data.values)
+                .attr("d", line)
+                .style("stroke", function () { return colors[1] })
+                .style("fill", "none")
+                .attr("stroke-width", 3)
+        var line2 = d3.line()
+                .x(d => xScale(d.name))
+                .y(d => yScale(d.value))
+        svg.append("path")
+                .attr("transform", "translate(60,0)")
+                .datum(data.values)
+                .attr("d", line)
+                .style("stroke", function () { return colors[2] })
+                .style("fill", "none")
+                .attr("stroke-width", 3)
+        var line3 = d3.line()
+                .x(d => xScale(d.name))
+                .y(d => yScale(d.value))
+        svg.append("path")
+                .attr("transform", "translate(60,0)")
+                .datum(data.values)
+                .attr("d", line)
+                .style("stroke", function () { return colors[3] })
+                .style("fill", "none")
+                .attr("stroke-width", 3)
+        
+        */
+ 
+        all.forEach(function (data, i) {
+            svg.selectAll(".c")
+                .data(data.values)
+                .enter()
+                .append("circle")
+                .attr("transform", "translate(60,0)")
+                .attr("cx", d => xScale(d.name))
+                .attr("cy", d => yScale(d.value))
+                .attr("r", 6)
+                .style("fill", function () { return colors[i]; })
+//mouseover & mouseout
+                .on("mouseover", function (d) {
+                    document.getElementById("title2").style.display = "block";
+                    document.getElementById("title2").innerHTML = data.name + " Region Earthquakes " + d.name;
+                    d3.select(this).attr("r", 12);
+//call another function to make bar chart also pass the current color in 
+                    barchart(data.name, d.name, colors[i])
+
+                })
+                .on("mouseout", function (d) {
+                    document.getElementById("title2").style.display = "none";
+                    d3.select(this).attr("r", 6);
+                    document.getElementById("bar").innerHTML = "";
+                })
+        })
+//legend
+        svg.selectAll(".text")
+            .append("g")
+            .data(group)
+            .enter()
+            .append('text')
+            .attr('x', 715)
+            .attr('y', function (d, i) { return (i * 20) + 17; })
+            .text(function (d) { return d; })
+            .style("font-size", 18)
+            .style("font-weight", "bold");
+
+        svg.selectAll(".point")
+            .append("g")
+            .data(group)
+            .enter()
+            .append('circle')
+            .attr('cx', 700)
+            .attr('cy', function (d, i) { return i * 20 + 12; })
+            .attr('r', 8)
+            .attr('fill', function (d, i) { return colors[i] });
+//gtid
+        svg.append("text")
+            .attr("x", 500)
+            .attr("y", 0+15)
+            .attr("text-anchor", "middle")
+            .text("scheng98")
+            .style("fill", "blue")
+            .style("font-size", 18)
+            .style("font-weight", "bold");
+
+
+    }
+
+    function barchart(mouseGroup, mouseTime, mouseColor) {
+        document.getElementById("bar").innerHTML = "";
+        var margin = { top: 50, right: 50, bottom: 50, left: 50 },
+            width = 1200 - margin.left - margin.right,
+            height = 800 - margin.top - margin.bottom;
+
+        var svg = d3.select("#bar")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .attr("transform", "translate(" + margin.left + "," + margin.top + ")")
+
+        var mouse = [];
+// change data format
+        mouseShow = input.filter(state => state.region == mouseGroup && state.year == mouseTime);
+        var mouseBar = [];
+        for (var i = 0; i < mouseShow.length; i++) {
+            mouseBar.push({ name: mouseShow[i].state, value: mouseShow[i].count });
+        }
+        mouseBar.sort(function (state1, state2) {
+            return state2.value - state1.value;
+        })
+
+        var highest = 0
+        for (var i = 0; i < mouseBar.length; i++) {
+            mouse.push(mouseBar[i].name);
+            if (highest < Number(mouseBar[i].value)) {
+                highest = Number(mouseBar[i].value);
+            }
+        }
+//scale
+        var xScale = d3.scaleLinear()
+            .range([0, width])
+            .domain([0, highest * 1.1])
+
+        var yScale = d3.scaleBand()
+            .domain(mouse)
+            .range([0, 500])
+            .padding(0.1);
+
+        svg.append("g")
+            .attr("transform", "translate(105,0)")
+            .call(d3.axisLeft(yScale))
+            .style("font-size","14px");
+
+        svg.append("g")
+            .attr("transform", "translate(105,500)")
+            .call(d3.axisBottom(xScale)
+                .ticks(6)
+                .tickSizeInner(-500))
+                .style("font-size","18px");
+
+//bar
+        svg.selectAll(".b")
+            .data(mouseBar)
+            .enter()
+            .append("g")
+            .append("rect")
+            .attr("transform", "translate(106,0)")
+            .attr("x", 0)
+            .attr("y", function (d) { return yScale(d.name); })
+            .attr("height", (height / mouseBar.length) * 0.6)
+            .attr("width", function (d) { return xScale(d.value); })
+            .style("fill", mouseColor);
+    }
+
+    </script>
+</body>
+</html>
